@@ -7,8 +7,10 @@ namespace WDT_Ass_1
         static void Main(string[] args)
         {
             Menu m = new Menu();
-            StudentMenu sm = new StudentMenu();
             m.MainMenu();
+            //ASREngine eng = new ASREngine();
+            //eng.DeleteSlot();
+
         }
     }
 }

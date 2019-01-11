@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WDT_Ass_1", "WDT_Ass_1.csproj", "{27595915-C973-4067-A98A-89CECE5F4A3F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WDT_Week2", "..\..\Week_2\WDT_Week2\WDT_Week2.csproj", "{B7D5B22D-EE49-42DC-9657-1CB4BBB7E70C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,5 +15,9 @@ Global
 		{27595915-C973-4067-A98A-89CECE5F4A3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{27595915-C973-4067-A98A-89CECE5F4A3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{27595915-C973-4067-A98A-89CECE5F4A3F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7D5B22D-EE49-42DC-9657-1CB4BBB7E70C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7D5B22D-EE49-42DC-9657-1CB4BBB7E70C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7D5B22D-EE49-42DC-9657-1CB4BBB7E70C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7D5B22D-EE49-42DC-9657-1CB4BBB7E70C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
