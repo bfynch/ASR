@@ -8,4 +8,7 @@
   <ItemGroup>
     <PackageReference Include="System.Data.SqlClient" Version="4.6.0" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="StudentMenu.cs" />
+  </ItemGroup>
 </Project>

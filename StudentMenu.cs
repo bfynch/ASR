@@ -31,7 +31,7 @@ namespace WDT_Ass_1
                     break;
                 case "3":
                     Console.Clear();
-                    m.CreateSlot();
+                    //m.CreateSlot();
                     break;
                 case "4":
                     break;
