@@ -1,100 +1,66 @@
 ﻿using System;
 using System.Data.SqlClient;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace WDT_Ass_1
 {
     public class ASREngine
     {
-        const string connectionString = "server=wdt2019.australiasoutheast.cloudapp.azure.com;uid=s3589828;database=s3589828;pwd=abc123";
+        SQLConnector sql = SQLConnector.GetInstance();
+        private SQLQueries _sqlqueries = new SQLQueries();
+        private MiscUtilities _misc = new MiscUtilities();
 
         //Code from Week 3 2.1 Example
+        //Queries the database for all rooms and prints them to the console.
         public void GetAllRooms()
         {
-            using (var connection = new SqlConnection(connectionString))
+            Console.Clear();
+            Console.WriteLine("Welcome to Appointment Scheduling and Reservation System");
+            Console.WriteLine("------------------------------------------------------------");
+            Console.WriteLine("Rooms: ");
+            using (var connection = sql.GetConnection())
             {
                 connection.Open();
-
                 var command = new SqlCommand("select * from Room", connection);
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        Console.WriteLine("{0}",
+                        Console.WriteLine("{0, 3}",
                             reader["RoomID"]);
                     }
                 }
             }
         }
 
-        //Prints all of the staff members in the database.
+        //Queries the database and prints all of the staff members.
         public void GetAllStaff()
         {
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = sql.GetConnection())
             {
                 Console.Clear();
                 Console.WriteLine("Welcome to Appointment Scheduling and Reservation System");
                 Console.WriteLine("------------------------------------------------------------");
                 Console.WriteLine("Staff Members:");
-                Console.WriteLine(String.Format("{0, -8} {1, -10} {2, -15}",
+                Console.WriteLine(String.Format("{0, -8} {1, -15} {2, -20}",
                 "User ID", "Name", "Email Address"));
-
                 connection.Open();
-
                 var command = new SqlCommand("SELECT * FROM [s3589828].[dbo].[User] WHERE [UserID] LIKE 'e%'", connection);
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        Console.WriteLine(String.Format("{0, -8} {1, -10} {2, -15}",
+                        Console.WriteLine(String.Format("{0, -8} {1, -15} {2, -20}",
                             reader["UserID"], reader["Name"], reader["Email"]));
                     }
                 }
             }
         }
 
-        // Method called by Menu.MakeBooking() to add a student to a slot.
-        public void BookSlot(string studentid, string starttime, string roomid)
-        {
-            using (var connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-                var command = connection.CreateCommand();
-                command.CommandText = $"update [Slot] set BookedInStudentID = '{studentid}' where RoomID = '{roomid}' and StartTime like '{starttime}%'";
-
-                var updates = command.ExecuteNonQuery();
-            }
-        }
-
-        //Method called by Menu.CancelBooking() to remove a student from a slot by setting the BookedInStudentId to null.
-        public void CancelBooking(string starttime, string roomid)
-        {
-            using (var connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-                var command = connection.CreateCommand();
-                command.CommandText = $"update [Slot] set BookedInStudentID = Null where RoomID = '{roomid}' and StartTime like '{starttime}%'";
-
-                var updates = command.ExecuteNonQuery();
-            }
-        }
-
-        //Method called by DeleteSlot() to delete a slot based on parameters from user input
-        public void SlotToDelete(string starttime, string roomid)
-        {
-            using (var connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-                var command = connection.CreateCommand();
-                command.CommandText = $"delete from [Slot] where RoomID = '{roomid}' and StartTime like '{starttime}%'";
-                var updates = command.ExecuteNonQuery();
-            }
-        }
-
+        // Prompts user to enter Room ID, a date, and time. If the the data corresponds
+        // with a row in the database and the BookedInStudentId is null the slot is deleted
         public void DeleteSlot()
         {
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = sql.GetConnection())
             {
                 try
                 {
@@ -108,9 +74,8 @@ namespace WDT_Ass_1
                     var date = Console.ReadLine();
                     Console.WriteLine("Enter time for slot (hh:mm): ");
                     var time = Console.ReadLine();
-                    string starttime = date + " " + time;
+                    var starttime = date + " " + time;
                     connection.Open();
-
                     var command = new SqlCommand($"select BookedInStudentID from [Slot] where RoomID = '{roomid}' and StartTime like '{starttime}%'", connection);
                     using (var reader = command.ExecuteReader())
                     {
@@ -118,8 +83,12 @@ namespace WDT_Ass_1
                         {
                             if (Convert.IsDBNull(reader["BookedInStudentID"]) && reader.HasRows)
                             {
-                                SlotToDelete(starttime, roomid);
+                                _sqlqueries.SlotToDelete(starttime, roomid);
                                 Console.WriteLine("Slot deleted successfully.");
+                            }
+                            else if(!Convert.IsDBNull(reader["BookedInStudentID"]))
+                            {
+                                Console.WriteLine("Unable to delete slot. A student is currently booked for this slot.");
                             }
                             else
                             {
@@ -135,32 +104,7 @@ namespace WDT_Ass_1
             }
         }
 
-        public void InsertSlot(string roomid, string starttime, string staffid)
-        {
-            using (var connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-                var command = connection.CreateCommand();
-                command.CommandText = $"insert into [Slot] (RoomID, StartTime, StaffID) values ('{roomid}', '{starttime}', '{staffid}');";
-
-                var updates = command.ExecuteNonQuery();
-            }
-        }
-
-        //checks how many slots have been made by a staff member on a certain date
-        //to prevent a staff member from making more than 4 slots per day
-        public int UserBookingsCount(string date, string id, string user)
-        {
-            using (var connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-                var command = connection.CreateCommand();
-                command.CommandText = $"select count(*) from [s3589828].[dbo].[Slot] where StartTime like '{date}%' and {user} = '{id}'";
-                Int32 count = (Int32)command.ExecuteScalar();
-                return count;
-            }
-        }
-
+        // User enters a date and all rooms that have less than 2 bookings on that date are displayed.
         public void RoomsAvailable()
         {
             Console.Clear();
@@ -170,83 +114,16 @@ namespace WDT_Ass_1
             var date = Console.ReadLine();
             Console.WriteLine($"Rooms available on {date}.");
 
-            if (RoomBookingsCount(date, "A") < 2) Console.WriteLine("A");
-            if (RoomBookingsCount(date, "B") < 2) Console.WriteLine("B");
-            if (RoomBookingsCount(date, "C") < 2) Console.WriteLine("C");
-            if (RoomBookingsCount(date, "D") < 2) Console.WriteLine("D");
+            if (_sqlqueries.RoomBookingsCount(date, "A") < 2) Console.WriteLine("A");
+            if (_sqlqueries.RoomBookingsCount(date, "B") < 2) Console.WriteLine("B");
+            if (_sqlqueries.RoomBookingsCount(date, "C") < 2) Console.WriteLine("C");
+            if (_sqlqueries.RoomBookingsCount(date, "D") < 2) Console.WriteLine("D");
         }
 
-        public int RoomBookingsCount(string date, string roomid)
-        {
-            using (var connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-                var command = connection.CreateCommand();
-                command.CommandText = $"select count(*) from [s3589828].[dbo].[Slot] where StartTime like '{date}%' and RoomID = '{roomid}'";
-                Int32 count = (Int32)command.ExecuteScalar();
-                return count;
-            }
-        }
-
-        //checks whether the student exists in the database and returns true if they do
-        public bool StudentIDCheck(string studentid)
-        {
-            using (var connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-                var command = connection.CreateCommand();
-                command.CommandText = $"select count(*) from [s3589828].[dbo].[User] where UserID = '{studentid}'";
-                Int32 count = (Int32)command.ExecuteScalar();
-                return count > 0;
-            }
-        }
-
-        public bool RoomIDCheck(string roomid)
-        {
-            return Regex.IsMatch(roomid, "[A-D]");
-        }
-
-        //checks whether the staff member exists in the database and returns true if they do
-        public bool StaffIDCheck(string staffid)
-        {
-            using (var connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-                var command = connection.CreateCommand();
-                command.CommandText = $"select count(*) from [s3589828].[dbo].[User] where UserID like 'e%' and UserID = '{staffid}'";
-                Int32 count = (Int32)command.ExecuteScalar();
-                return count > 0;
-            }
-        }
-
-        //prints all of the slots that aren't booked by a student
-        public void GetFreeSlots()
-        {
-            using (var connection = new SqlConnection(connectionString))
-            {
-                Console.Clear();
-                Console.WriteLine("Welcome to Appointment Scheduling and Reservation System");
-                Console.WriteLine("------------------------------------------------------------");
-                Console.WriteLine("Available Slots:");
-                Console.WriteLine(String.Format("{0, -6} {1, -25} {2, -8}",
-                "Room", "Time and Date (dd/mm/yy)", "Staff Member"));
-                connection.Open();
-
-                var command = new SqlCommand("SELECT * FROM [s3589828].[dbo].[Slot] where BookedInStudentID is NULL;", connection);
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        Console.WriteLine(String.Format("{0, -6} {1, -25} {2, -8}",
-                            reader["RoomID"], reader["StartTime"], reader["StaffID"]));
-                    }
-                }
-            }
-        }
-
+        //Queries the database and prints all of the students' information.
         public void GetAllStudents()
         {
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = sql.GetConnection())
             {
                 Console.Clear();
                 Console.WriteLine("Welcome to Appointment Scheduling and Reservation System");
@@ -268,104 +145,190 @@ namespace WDT_Ass_1
             }
         }
 
-        //Called after most menu items to clear the console and prompt the user to return them to the menu. 
-        public void ReturnToMenu()
+        // User inputs a date and StaffID and the available slots for that day are printed.
+        public void StaffAvailability()
         {
-            Console.Write("Press any key to return to the menu...");
-            Console.ReadKey();
-            Console.Clear();
-        }
-
-        //User inputs a date and all of the slots for that date are printed from the db.
-        public void GeAllSlotsByDate()
-        {
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = sql.GetConnection())
             {
                 Console.Clear();
                 Console.WriteLine("Welcome to Appointment Scheduling and Reservation System");
                 Console.WriteLine("------------------------------------------------------------");
+                Console.WriteLine("Staff Availability: ");
                 Console.WriteLine("Enter date: (yyyy-mm-dd)");
                 var date = Console.ReadLine();
-                Console.WriteLine(String.Format("{0, -6} {1, -25} {2, -8} {3, -8}",
-                "Room", "Time and Date (dd/mm/yy)", "Staff Member", "Student"));
+                Console.WriteLine("Enter Staff ID: ");
+                var staffid = Console.ReadLine();
+                Console.WriteLine(String.Format("{0, -6} {1, -25} {2, -15}",
+                "Room", "Time and Date (dd/mm/yy)", "Staff Member"));
                 connection.Open();
-
-                var command = new SqlCommand($"SELECT * FROM [s3589828].[dbo].[Slot] where StartTime like '{date}%';", connection);
+                var command = new SqlCommand($"SELECT * FROM [s3589828].[dbo].[Slot] where StaffID = '{staffid}' and BookedInStudentID is Null and StartTime like '{date}%';", connection);
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        Console.WriteLine(String.Format("{0, -6} {1, -25} {2, -8} {3, -8}",
+                        Console.WriteLine(String.Format("{0, -6} {1, -25} {2, -15}",
+                            reader["RoomID"], reader["StartTime"], reader["StaffID"]));
+                    }
+                }
+            }
+        }
+
+        // User inputs date, and StaffID and all booked slots for that day are printed.
+        public void ViewBookings()
+        {
+            using (var connection = sql.GetConnection())
+            {
+                Console.Clear();
+                Console.WriteLine("Welcome to Appointment Scheduling and Reservation System");
+                Console.WriteLine("------------------------------------------------------------");
+                Console.WriteLine("View Bookings");
+                Console.WriteLine("Enter date: (yyyy-mm-dd)");
+                var date = Console.ReadLine();
+                Console.WriteLine("Enter Staff ID: ");
+                var staffid = Console.ReadLine();
+                Console.WriteLine(String.Format("{0, -6} {1, -25} {2, -15}",
+                "Room", "Time and Date (dd/mm/yy)", "Student ID"));
+                connection.Open();
+                var command = new SqlCommand($"SELECT * FROM [s3589828].[dbo].[Slot] where StaffID = '{staffid}' and BookedInStudentID is not Null and StartTime like '{date}%';", connection);
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        Console.WriteLine(String.Format("{0, -6} {1, -25} {2, -15}",
+                            reader["RoomID"], reader["StartTime"], reader["BookedInStudentID"]));
+                    }
+                }
+            }
+        }
+
+        //Queries the database and prints all slots; booked or otherwise.
+        public void GetAllSlots()
+        {
+            using (var connection = sql.GetConnection())
+            {
+                Console.Clear();
+                Console.WriteLine("Welcome to Appointment Scheduling and Reservation System");
+                Console.WriteLine("------------------------------------------------------------");
+                Console.WriteLine("All Slots");
+                Console.WriteLine(String.Format("{0, -6} {1, -25} {2, -15} {3, -15}",
+                "Room", "Time and Date (dd/mm/yy)", "Staff Member", "Student"));
+                connection.Open();
+                var command = new SqlCommand($"SELECT * FROM [s3589828].[dbo].[Slot];", connection);
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        Console.WriteLine(String.Format("{0, -6} {1, -25} {2, -15} {3, -15}",
                             reader["RoomID"], reader["StartTime"], reader["StaffID"], reader["BookedInStudentID"]));
                     }
                 }
             }
         }
 
+        // Prompts user to input Room ID, a date, a time, and Student ID. If the Student ID
+        // exists in the database, and the time is valid, and the room id is valid, and 
+        // the student has no other bookings for that day, then the student id is added
+        // to the BookedInStudentID for that row. 
         public void MakeBooking()
         {
-            Console.Clear();
-            Console.WriteLine("Welcome to Appointment Scheduling and Reservation System");
-            Console.WriteLine("------------------------------------------------------------");
-            Console.WriteLine("Make a Booking");
-            Console.WriteLine("Enter room ID: ");
-            var roomid = Console.ReadLine();
-            Console.WriteLine("Enter date for slot (yyyy-mm-dd): ");
-            var date = Console.ReadLine();
-            Console.WriteLine("Enter time for slot (hh:mm): ");
-            var time = Console.ReadLine();
-            Console.WriteLine("Enter Student ID: ");
-            var studid = Console.ReadLine();
-            string starttime = date + " " + time;
-            if (StudentIDCheck(studid) && ValidTime(time) && RoomIDCheck(roomid) && UserBookingsCount(date, studid, "BookedInStudentID") == 0)
+            using (var connection = sql.GetConnection())
             {
-                //User has input correct information and is prompted with a message.
-                BookSlot(studid, starttime, roomid);
-                Console.WriteLine("Slot booked successfully. ");
-            }
-            else if (UserBookingsCount(date, studid, "BookedInStudentID") == 1)
-            {
-                Console.WriteLine($"Student {studid} has exceeded the max amount of bookings per day. ");
-            }
-            else
-            {
-                //User has input invalid data and is prompted with a message.
-                Console.WriteLine("Invalid information submitted. ");
-            }
-        }
-
-        public void CancelBooking()
-        {
-            try
-            {
+                Console.Clear();
                 Console.WriteLine("Welcome to Appointment Scheduling and Reservation System");
                 Console.WriteLine("------------------------------------------------------------");
-                Console.WriteLine("Delete a Booking");
+                Console.WriteLine("Make a Booking");
                 Console.WriteLine("Enter room ID: ");
                 var roomid = Console.ReadLine();
                 Console.WriteLine("Enter date for slot (yyyy-mm-dd): ");
                 var date = Console.ReadLine();
                 Console.WriteLine("Enter time for slot (hh:mm): ");
                 var time = Console.ReadLine();
-                string starttime = date + " " + time;
-                if (ValidTime(time) && RoomIDCheck(roomid))
+                Console.WriteLine("Enter Student ID: ");
+                var studid = Console.ReadLine();
+                var starttime = date + " " + time;
+                connection.Open();
+                var command = new SqlCommand($"select * from [Slot] where RoomID = '{roomid}' and StartTime like '{starttime}%'", connection);
+                using (var reader = command.ExecuteReader())
                 {
-                    //User has input correct information and is prompted with a message.
-                    CancelBooking(starttime, roomid);
-                    Console.WriteLine("Booking canceled successfully. ");
+                    while (reader.Read())
+                        if (_sqlqueries.StudentIDCheck(studid) && _misc.ValidTime(time) && _misc.RoomIDCheck(roomid) &&
+                         _sqlqueries.UserBookingsCount(date, studid, "BookedInStudentID") == 0 && Convert.IsDBNull(reader["BookedInStudentID"]))
+                        {
+                            //User has input correct information and is prompted with a message.
+                            _sqlqueries.BookSlot(studid, starttime, roomid);
+                            Console.WriteLine("Slot booked successfully. ");
+                        }
+                        else if (_sqlqueries.UserBookingsCount(date, studid, "BookedInStudentID") == 1)
+                        {
+                            Console.WriteLine($"Unable to make Booking. Student {studid} has exceeded the max amount of bookings per day. ");
+                        }
+                        else if(!Convert.IsDBNull(reader["BookedInStudentID"]))
+                        {
+                            Console.WriteLine("Unable to book slot. Another student has already booked this slot.");
+                        }
+                        else
+                        {
+                            //User has input invalid data and is prompted with a message.
+                            Console.WriteLine("Invalid information submitted. ");
+                        }
                 }
-                else
-                {
-                    //User has input invalid data and is prompted with a message.
-                    Console.WriteLine("Invalid information submitted. ");
-                }
-            }
-            catch(Exception e)
-            {
-                Console.WriteLine("An unexpected error occurred.");
             }
         }
 
+        // Prompts user for room ID, date, and time for a booking. If the time is valid,
+        // and the room id is valid, and a booking is found, and the BookedInStudentID
+        // isnt null, then the booking is cancelled by setting BookedInStudentID to null.
+        public void CancelBooking()
+        {
+            using (var connection = sql.GetConnection())
+            {
+                try
+                {
+                    Console.Clear();
+                    Console.WriteLine("Welcome to Appointment Scheduling and Reservation System");
+                    Console.WriteLine("------------------------------------------------------------");
+                    Console.WriteLine("Delete a Booking");
+                    Console.WriteLine("Enter room ID: ");
+                    var roomid = Console.ReadLine();
+                    Console.WriteLine("Enter date for slot (yyyy-mm-dd): ");
+                    var date = Console.ReadLine();
+                    Console.WriteLine("Enter time for slot (hh:mm): ");
+                    var time = Console.ReadLine();
+                    var starttime = date + " " + time;
+                    connection.Open();
+                    var command = new SqlCommand($"select * from [Slot] where RoomID = '{roomid}' and StartTime like '{starttime}%'", connection);
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                            if (_misc.ValidTime(time) && _misc.RoomIDCheck(roomid) && reader.HasRows && !Convert.IsDBNull(reader["BookedInStudentID"]))
+                            {
+                                //User has input correct information and is prompted with a message.
+                                _sqlqueries.CancelBooking(starttime, roomid);
+                                Console.WriteLine("Booking canceled successfully. ");
+                            }
+                            else if (Convert.IsDBNull(reader["BookedInStudentID"]))
+                            { 
+                                Console.WriteLine("There is not a student currently booked into this slot. ");
+                            }
+                            else
+                            {
+                                //User has input invalid data and is prompted with a message.
+                                Console.WriteLine("Invalid information submitted. ");
+                            }
+                    }
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("An unexpected error occurred.");
+                }
+            }
+        }
+
+        // Prompts for user input for Room ID, Date, Time, and StaffID. If the staff ID
+        // exists in the database, and time is correct format, and the room ID is valid,
+        // and the staff member has less than 4 bookings on that date, and the room is 
+        // booked for less than 2 slots on that date, then the data is inserted to the
+        // database. Otherwise exceptions are caught and other errors are displayed.
         public void CreateSlot()
         {
             try
@@ -382,18 +345,18 @@ namespace WDT_Ass_1
                 var time = Console.ReadLine();
                 Console.WriteLine("Enter Staff ID: ");
                 var staffid = Console.ReadLine();
-                string starttime = date + " " + time;
-                if (StaffIDCheck(staffid) && ValidTime(time) && RoomIDCheck(roomid) && UserBookingsCount(date, staffid, "StaffID") < 4 && RoomBookingsCount(date, roomid) < 2)
+                var starttime = date + " " + time;
+                if (_sqlqueries.StaffIDCheck(staffid) && _misc.ValidTime(time) && _misc.RoomIDCheck(roomid) && _sqlqueries.UserBookingsCount(date, staffid, "StaffID") < 4 && _sqlqueries.RoomBookingsCount(date, roomid) < 2)
                 {
                     //User has input correct information and is prompted with a message.
-                    InsertSlot(roomid, starttime, staffid);
+                    _sqlqueries.InsertSlot(roomid, starttime, staffid);
                     Console.WriteLine("Slot created successfully. ");
                 }
-                else if (UserBookingsCount(date, staffid, "StaffID") == 4)
+                else if (_sqlqueries.UserBookingsCount(date, staffid, "StaffID") == 4)
                 {
                     Console.WriteLine($"Staff member {staffid} has exceeded the max amount of slots per day");
                 }
-                else if (RoomBookingsCount(date, roomid) == 2)
+                else if (_sqlqueries.RoomBookingsCount(date, roomid) == 2)
                 {
                     Console.WriteLine($"Room {roomid} has exceeded the max amount of bookings per day. ");
                 }
@@ -405,21 +368,6 @@ namespace WDT_Ass_1
             }
         }
 
-        public bool ValidTime(string time)
-        {
-            try
-            {
-                //creates ints for hour and minutes from substrings of the user input
-                int hour = Int32.Parse(time.Substring(0, 2));
-                int min = Int32.Parse(time.Substring(3, 2));
-                //checks whether the time input from the user is valid
-                return time.Length == 5 && time.IndexOf(':') == 2 && hour <= 14 && hour >= 9 && min == 0;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-            }
-            return false;
-        }
+
     }
 }

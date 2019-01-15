@@ -1,18 +1,14 @@
 ﻿using System;
-using System.Text.RegularExpressions;
 
 namespace WDT_Ass_1
 {
     public class Menu
     {
+        private ASREngine _eng = new ASREngine();
+        private MiscUtilities _misc = new MiscUtilities();
 
-        ASREngine eng = new ASREngine();
-
-        public void Exit()
-        {
-            Environment.Exit(0);
-        }
-
+        // Prints the main menu. Users are able to navigate to staff menu, student menu,
+        // or call other functions based on user input
         public void MainMenu()
         {
             Console.WriteLine("Welcome to Appointment Scheduling and Reservation System");
@@ -29,13 +25,13 @@ namespace WDT_Ass_1
             switch (input)
             {
                 case "1":
-                    eng.GetAllRooms();
-                    eng.ReturnToMenu();
+                    _eng.GetAllRooms();
+                    _misc.ReturnToMenu();
                     MainMenu();
                     break;
                 case "2":
-                    eng.GeAllSlotsByDate();
-                    eng.ReturnToMenu();
+                    _eng.GetAllSlots();
+                    _misc.ReturnToMenu();
                     MainMenu();
                     break;
                 case "3":
@@ -57,47 +53,54 @@ namespace WDT_Ass_1
             }
         }
 
+        // Prints menu for staff members.
         public void StaffMenu()
         {
             Console.WriteLine("Welcome to Appointment Scheduling and Reservation System");
             Console.WriteLine("------------------------------------------------------------");
             Console.WriteLine("Staff Menu:");
             Console.WriteLine("1. List Staff");
-            Console.WriteLine("2. Room Availability");
-            Console.WriteLine("3. Create Slot");
-            Console.WriteLine("4. Remove Slot");
-            Console.WriteLine("5. Main Menu");
-            Console.WriteLine("6. Exit");
+            Console.WriteLine("2. View Bookings");
+            Console.WriteLine("3. Room Availability");
+            Console.WriteLine("4. Create Slot");
+            Console.WriteLine("5. Remove Slot");
+            Console.WriteLine("6. Main Menu");
+            Console.WriteLine("7. Exit");
 
             var input = Console.ReadLine();
 
             switch (input)
             {
                 case "1":
-                    eng.GetAllStaff();
-                    eng.ReturnToMenu();
+                    _eng.GetAllStaff();
+                    _misc.ReturnToMenu();
                     StaffMenu();
                     break;
                 case "2":
-                    eng.RoomsAvailable();
-                    eng.ReturnToMenu();
+                    _eng.ViewBookings();
+                    _misc.ReturnToMenu();
                     StaffMenu();
                     break;
                 case "3":
-                    eng.CreateSlot();
-                    eng.ReturnToMenu();
+                    _eng.RoomsAvailable();
+                    _misc.ReturnToMenu();
                     StaffMenu();
                     break;
                 case "4":
-                    eng.DeleteSlot();
-                    eng.ReturnToMenu();
+                    _eng.CreateSlot();
+                    _misc.ReturnToMenu();
                     StaffMenu();
                     break;
                 case "5":
+                    _eng.DeleteSlot();
+                    _misc.ReturnToMenu();
+                    StaffMenu();
+                    break;
+                case "6":
                     Console.Clear();
                     MainMenu();
                     break;
-                case "6":
+                case "7":
                     Exit();
                     break;
                 default:
@@ -108,6 +111,7 @@ namespace WDT_Ass_1
             }
         }
 
+        // Prints menu for students.
         public void StudentMenu()
         {
             Console.WriteLine("Welcome to Appointment Scheduling and Reservation System");
@@ -125,23 +129,23 @@ namespace WDT_Ass_1
             switch (input)
             {
                 case "1":
-                    eng.GetAllStudents();
-                    eng.ReturnToMenu();
+                    _eng.GetAllStudents();
+                    _misc.ReturnToMenu();
                     StudentMenu();
                     break;
                 case "2":
-                    eng.GetFreeSlots();
-                    eng.ReturnToMenu();
+                    _eng.StaffAvailability();
+                    _misc.ReturnToMenu();
                     StudentMenu();
                     break;
                 case "3":
-                    eng.MakeBooking();
-                    eng.ReturnToMenu();
+                    _eng.MakeBooking();
+                    _misc.ReturnToMenu();
                     StudentMenu();
                     break;
                 case "4":
-                    eng.CancelBooking();
-                    eng.ReturnToMenu();
+                    _eng.CancelBooking();
+                    _misc.ReturnToMenu();
                     StudentMenu();
                     break;
                 case "5":
@@ -157,6 +161,11 @@ namespace WDT_Ass_1
                     MainMenu();
                     break;
             }
+        }
+
+        public void Exit()
+        {
+            Environment.Exit(0);
         }
     }
 }

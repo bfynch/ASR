@@ -7,8 +7,14 @@
 
   <ItemGroup>
     <PackageReference Include="System.Data.SqlClient" Version="4.6.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="StudentMenu.cs" />
+    <Compile Remove="SQLConnection.cs" />
+    <Compile Remove="StudentMenu.cs" />
+    <Compile Remove="New Folder\test.cs" />
   </ItemGroup>
 </Project>
